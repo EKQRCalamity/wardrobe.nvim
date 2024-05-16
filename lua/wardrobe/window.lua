@@ -22,7 +22,7 @@ local function split(str, sep)
   return ret
 end
 
-local function apply_colorscheme(wincontent, closewindow, main_win, title_win, preview_win)
+local function apply_colorscheme(wincontent, closewindow, main_win, preview_win)
   local current_line = vim.fn.line('.')
   local content = wincontent[current_line]
   if content then
@@ -38,9 +38,6 @@ local function apply_colorscheme(wincontent, closewindow, main_win, title_win, p
         WINDOW.save_theme(content)
         if main_win then
           vim.api.nvim_win_close(main_win, true)
-        end
-        if title_win then
-          vim.api.nvim_win_close(title_win, true)
         end
         if preview_win then
           vim.api.nvim_win_close(preview_win, true)
@@ -64,11 +61,9 @@ local function close(window)
   end
 end
 
-local function close_all(window1, window2, window3)
+local function close_all(window1, window2)
   close(window1)
-  close(window2)
-  close(window3)
-end
+  close(window2)end
 
 WINDOW.save_theme = function (name)
   local config_dir = vim.fn.stdpath('data')
@@ -99,18 +94,23 @@ WINDOW.open_preview_window = function()
 end
 
 WINDOW.open_window = function()
+  -- Get the current colors for the Normal highlight group
+  local normal_hl = vim.api.nvim_get_hl_by_name("Normal", true)
+  local normal_bg = normal_hl.background
+  local normal_fg = normal_hl.foreground
+
+  -- Set the NormalFloat highlight group to use the same colors
+  vim.api.nvim_set_hl(0, "NormalFloat", {bg = normal_bg, fg = normal_fg})
+
+  -- Set the FloatBorder highlight group to use the same background and a different border color
+  vim.api.nvim_set_hl(0, "FloatBorder", {bg = normal_bg, fg = normal_fg})  -- Example uses same colors for simplicity
   local preview = vim.o.columns > 160
   local buf = vim.api.nvim_create_buf(false, true)
-  local title_buf = vim.api.nvim_create_buf(false, true)
-  local preview_buf = vim.api.nvim_create_buf(false, true)
+  local preview_buf = vim.api.nvim_create_buf(true, true)
   local width = 50
-  local title_width = 60
   local main_win_width = 60
   if preview then
-    main_win_width = 22
-  end
-  if preview then
-    title_width = 86
+    main_win_width = 24
   end
   local height = 20
   local col
@@ -121,59 +121,16 @@ WINDOW.open_window = function()
   end
   local row = math.floor((vim.o.lines - height) / 2) + 4
 
-  local title_options = {
-    style = 'minimal',
-    relative = 'editor',
-    width = title_width,
-    height = 2,
-    col = col,
-    row = row-4,
-    border = 'double'
-  }
-
-  local title_window = vim.api.nvim_open_win(title_buf, false, title_options)
-  vim.api.nvim_buf_set_lines(title_buf, 0, -1, false, {
-    "Wardrobe - A small theme chooser for lazy people!",
-    "• q&<esc> » Exit • p » Preview • <CR> » Save (& Close)"
-  })
-
-  local preview_win = nil
-  if preview then
-    local preview_options = {
-      relative = 'editor',
-      width = 60,
-      height = height,
-      col = col + (width / 2) + 1,
-      row = row,
-      border = 'single'
-    }
-
-    preview_win = vim.api.nvim_open_win(preview_buf, true, preview_options)
-
-    local example_code = {
-      "-- This is an example lua code file to preview the scheme",
-      "local function hello_world()",
-      "  print('Hello, World!')",
-      "end",
-      "hello_world()"
-    }
-
-    vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, example_code)
-
-    vim.api.nvim_buf_set_option(preview_buf, 'modifiable', false)
-
-    vim.api.nvim_buf_set_option(preview_buf, 'filetype', 'lua')
-  end
-
-
   local options = {
+    title = "Wardrobe",
+    title_pos = "center",
     style = "minimal",
     relative = 'editor',
     width = main_win_width,
     height = height,
     col = col,
     row = row,
-    border = 'double'
+    border = 'single'
   }
 
   local window = vim.api.nvim_open_win(buf, true, options)
@@ -193,40 +150,69 @@ WINDOW.open_window = function()
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, main_win_content)
 
-  vim.api.nvim_buf_set_option(title_buf, 'modifiable', false)
+  local preview_win = nil
+  if preview then
+    local preview_options = {
+      relative = 'editor',
+      width = 60,
+      height = height,
+      col = col + (width / 2) + 1,
+      row = row,
+      border = 'single'
+    }
+
+
+    vim.api.nvim_buf_set_option(preview_buf, 'filetype', 'lua')
+    preview_win = vim.api.nvim_open_win(preview_buf, false, preview_options)
+
+    local example_code = {
+      "-- This is an example lua code file to preview the scheme",
+      "local function hello_world()",
+      "  print('Hello, World!')",
+      "end",
+      "hello_world()"
+    }
+
+    vim.api.nvim_buf_set_lines(preview_buf, 0, -1, true, example_code)
+
+    vim.api.nvim_buf_set_option(preview_buf, 'modifiable', false)
+
+    local lines = vim.api.nvim_buf_get_lines(preview_buf, 0, -1, false)
+    for i = 0, #lines do
+      vim.api.nvim_buf_add_highlight(preview_buf, -1, "Normal", i, 0, -1)
+    end
+    local empty_lines = {}
+    for _ = 1, height - #example_code do
+      table.insert(empty_lines, "")
+    end
+    vim.api.nvim_buf_set_lines(buf, #example_code, -1, false, empty_lines)
+  end
+
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 
   set_keymap(buf, "<CR>", function()
-    apply_colorscheme(main_win_content, true, window, title_window, preview_win)
+    apply_colorscheme(main_win_content, true, window, preview_win)
   end)
 
   set_keymap(buf, "p", function()
-    apply_colorscheme(main_win_content, false, window, title_window, preview_win)
-  end)
-
-  set_keymap(buf, "<esc>", function()
-    close_all(window, title_window, preview_win)
-  end)
-
-  set_keymap(buf, "q", function()
-    close_all(window, title_window, preview_win)
+    apply_colorscheme(main_win_content, false, window, preview_win)
   end)
 
   set_keymap(preview_buf, "<esc>", function()
-    close_all(window, title_window, preview_win)
+    close_all(window, preview_win)
   end)
 
   set_keymap(preview_buf, "q", function()
-    close_all(window, title_window, preview_win)
+    close_all(window, preview_win)
   end)
 
 
-  set_keymap(title_buf, "<esc>", function()
-    close_all(window, title_window, preview_win)
+  set_keymap(buf, "<esc>", function()
+    close_all(window, preview_win)
   end)
 
-  set_keymap(title_buf, "q", function()
-    close_all(window, title_window, preview_win)
+  set_keymap(buf, "q", function()
+    close_all(window, preview_win)
   end)
 end
 
