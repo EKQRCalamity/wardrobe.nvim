@@ -38,6 +38,6 @@ wardrobe.window.register_theme()
 | Keybind    | Function                         | In Window? |
 |------------|----------------------------------|------------|
 | <leader>th | Open the theme changer window    | No         |
-| q          | Close all theme changer windows  | Yes        |
+| q/<esc>    | Close all theme changer windows  | Yes        |
 | p          | Preview the theme under cursor   | Yes        |
 | \<CR>      | Apply theme under cursor & close | Yes        |
