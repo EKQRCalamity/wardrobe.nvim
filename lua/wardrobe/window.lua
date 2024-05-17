@@ -82,8 +82,14 @@ local function apply_colorscheme(wincontent, closewindow, main_win, preview_win,
   if content then
     if content == "dark bg" then
       vim_background("dark")
+      if closewindow then
+        WINDOW.save_mode("dark")
+      end
     elseif content == "light bg" then
       vim_background("light")
+      if closewindow then
+        WINDOW.save_mode("light")
+      end
     else
       content = split(content, " ")[2]
       vim_colorscheme(content)
@@ -136,6 +142,13 @@ local function close_all(window1, window2)
   close(window2)
 end
 
+WINDOW.save_mode = function (mode)
+  local config_dir = vim.fn.stdpath("data")
+  local config_file = config_dir .. "/wardrobe-nvim-background.chosen"
+
+  vim.fn.writefile({mode}, config_file)
+end
+
 WINDOW.save_theme = function (name)
   local config_dir = vim.fn.stdpath('data')
   local config_file = config_dir .. '/wardrobe-nvim-theme.chosen'
@@ -144,11 +157,19 @@ WINDOW.save_theme = function (name)
 end
 
 WINDOW.load_theme = function ()
-  local config_dir = vim.fn.stdpath('data')
-  local config_file = config_dir .. '/wardrobe-nvim-theme.chosen'
+  local config_dir = vim.fn.stdpath("data")
+  local theme_config_file = config_dir .. "/wardrobe-nvim-theme.chosen"
+  local mode_config_file = config_dir .. "/wardrobe-nvim-background.chosen"
 
-  if vim.fn.filereadable(config_file) == 1 then
-    local data = vim.fn.readfile(config_file)
+  if vim.fn.filereadable(mode_config_file) == 1 then
+    local data = vim.fn.readfile(mode_config_file)
+    if #data > 0 then
+      vim_background(data[1])
+    end
+  end
+
+  if vim.fn.filereadable(theme_config_file) == 1 then
+    local data = vim.fn.readfile(theme_config_file)
     if #data > 0 then
       return data[1]
     end
@@ -156,6 +177,8 @@ WINDOW.load_theme = function ()
 
   return nil
 end
+
+
 
 WINDOW.open_preview_window = function()
   local min_term_width = 160
