@@ -1,5 +1,7 @@
 local WINDOW = {}
 
+UTILS = require("wardrobe.utils")
+
 local example_code = {
   "-- Function to draw a vortex pattern",
   "function drawVortexPattern()",
@@ -32,37 +34,7 @@ local example_code = {
   "drawVortexPattern()",
 }
 
-local function get_colorschemes()
-  return vim.fn.getcompletion('', 'color')
-end
-
-local function vim_colorscheme(colorscheme)
-  vim.cmd('colorscheme ' .. colorscheme)
-end
-
-local function vim_background(background)
-  vim.cmd("set background=" .. background)
-end
-
-local function split(str, sep)
-  local ret = {}
-
-  for s in string.gmatch(str, "([^"..sep.."]+)") do
-    table.insert(ret, s)
-  end
-
-  return ret
-end
-
--- Define the function in the global scope
-_G.update_highlight_groups = function()
-  local normal_hl = vim.api.nvim_get_hl_by_name("Normal", true)
-  local normal_bg = normal_hl.background or 'none'
-  local normal_fg = normal_hl.foreground or 'none'
-
-  vim.api.nvim_set_hl(0, "NormalFloat", {bg = normal_bg, fg = normal_fg})
-  vim.api.nvim_set_hl(0, "FloatBorder", {bg = normal_bg, fg = normal_fg})
-end
+local selectedColorscheme = ""
 
 -- Autocommand to update highlight groups on colorscheme change
 vim.cmd([[
@@ -81,20 +53,20 @@ local function apply_colorscheme(wincontent, closewindow, main_win, preview_win,
   local content = wincontent[current_line]
   if content then
     if content == "dark bg" then
-      vim_background("dark")
+      UTILS.vim_background("dark")
       if closewindow then
-        WINDOW.save_mode("dark")
+        UTILS.save_mode("dark")
       end
     elseif content == "light bg" then
-      vim_background("light")
+      UTILS.vim_background("light")
       if closewindow then
-        WINDOW.save_mode("light")
+        UTILS.save_mode("light")
       end
     else
-      content = split(content, " ")[2]
-      vim_colorscheme(content)
+      content = UTILS.split(content, " ")[2]
+      UTILS.vim_colorscheme(content)
       if closewindow then
-        WINDOW.save_theme(content)
+        UTILS.save_theme(content)
         if main_win then
           vim.api.nvim_win_close(main_win, true)
         end
@@ -122,63 +94,6 @@ local function apply_colorscheme(wincontent, closewindow, main_win, preview_win,
     end
   end
 end
-
-local function set_keymap(buf, key, func)
-  vim.api.nvim_buf_set_keymap(buf, 'n', key, '', {
-    noremap = true,
-    silent = true,
-    callback = func
-  })
-end
-
-local function close(window)
-  if window then
-    vim.api.nvim_win_close(window, true)
-  end
-end
-
-local function close_all(window1, window2)
-  close(window1)
-  close(window2)
-end
-
-WINDOW.save_mode = function (mode)
-  local config_dir = vim.fn.stdpath("data")
-  local config_file = config_dir .. "/wardrobe-nvim-background.chosen"
-
-  vim.fn.writefile({mode}, config_file)
-end
-
-WINDOW.save_theme = function (name)
-  local config_dir = vim.fn.stdpath('data')
-  local config_file = config_dir .. '/wardrobe-nvim-theme.chosen'
-
-  vim.fn.writefile({name}, config_file)
-end
-
-WINDOW.load_theme = function ()
-  local config_dir = vim.fn.stdpath("data")
-  local theme_config_file = config_dir .. "/wardrobe-nvim-theme.chosen"
-  local mode_config_file = config_dir .. "/wardrobe-nvim-background.chosen"
-
-  if vim.fn.filereadable(mode_config_file) == 1 then
-    local data = vim.fn.readfile(mode_config_file)
-    if #data > 0 then
-      vim_background(data[1])
-    end
-  end
-
-  if vim.fn.filereadable(theme_config_file) == 1 then
-    local data = vim.fn.readfile(theme_config_file)
-    if #data > 0 then
-      return data[1]
-    end
-  end
-
-  return nil
-end
-
-
 
 WINDOW.open_preview_window = function()
   local min_term_width = 160
@@ -220,7 +135,7 @@ WINDOW.open_window = function()
   }
 
   local window = vim.api.nvim_open_win(buf, true, options)
-  local colorschemes = get_colorschemes()
+  local colorschemes = UTILS.get_colorschemes()
   local modes = {"dark bg", "light bg"}
   local main_win_content = {}
 
@@ -265,28 +180,28 @@ WINDOW.open_window = function()
 
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
 
-  set_keymap(buf, "<CR>", function()
+  UTILS.set_keymap(buf, "<CR>", function()
     apply_colorscheme(main_win_content, true, window, preview_win, preview_buf)
   end)
 
-  set_keymap(buf, "p", function()
+  UTILS.set_keymap(buf, "p", function()
     apply_colorscheme(main_win_content, false, window, preview_win, preview_buf)
   end)
 
-  set_keymap(preview_buf, "<esc>", function()
-    close_all(window, preview_win)
+  UTILS.set_keymap(preview_buf, "<esc>", function()
+    UTILS.close_all(window, preview_win)
   end)
 
-  set_keymap(preview_buf, "q", function()
-    close_all(window, preview_win)
+  UTILS.set_keymap(preview_buf, "q", function()
+    UTILS.close_all(window, preview_win)
   end)
 
-  set_keymap(buf, "<esc>", function()
-    close_all(window, preview_win)
+  UTILS.set_keymap(buf, "<esc>", function()
+    UTILS.close_all(window, preview_win)
   end)
 
-  set_keymap(buf, "q", function()
-    close_all(window, preview_win)
+  UTILS.set_keymap(buf, "q", function()
+    UTILS.close_all(window, preview_win)
   end)
 end
 
@@ -299,10 +214,10 @@ WINDOW.register_keymaps = function()
 end
 
 WINDOW.register_theme = function()
-  local theme = WINDOW.load_theme()
+  local theme = UTILS.load_from_fs()
 
   if theme then
-    vim_colorscheme(theme)
+    UTILS.vim_colorscheme(theme)
   end
 end
 
