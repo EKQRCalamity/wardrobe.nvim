@@ -78,11 +78,8 @@ local function apply_colorscheme(wincontent, closewindow, main_win, preview_win,
 
 
         vim.api.nvim_buf_set_option(preview_buf, 'filetype', 'lua')
-        vim.cmd("syntax clear")
-        -- Ensure syntax highlighting is enabled
-        vim.cmd("syntax enable")
-        -- Redraw the screen to update syntax highlighting
-        vim.cmd("redraw")
+        
+        UTILS.reload_syntax()
 
         -- Clear buffer contents
         vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, {})
@@ -162,20 +159,16 @@ WINDOW.open_window = function()
 
     vim.api.nvim_buf_set_option(preview_buf, 'filetype', 'lua')
     preview_win = vim.api.nvim_open_win(preview_buf, false, preview_options)
+       
+    UTILS.reload_syntax()
 
-    vim.api.nvim_buf_set_lines(preview_buf, 0, -1, true, example_code)
+    -- Clear buffer contents
+    vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, {})
 
-    local lines = vim.api.nvim_buf_get_lines(preview_buf, 0, -1, false)
-    for i = 0, #lines do
-      vim.api.nvim_buf_add_highlight(preview_buf, -1, "Normal", i, 0, -1)
-    end
-    local empty_lines = {}
-    for _ = 1, 90 do
-      table.insert(empty_lines, "")
-    end
-    vim.api.nvim_buf_set_option(preview_buf, 'modifiable', true)
-    vim.api.nvim_buf_set_lines(preview_buf, #example_code, -1, false, empty_lines)
+    -- Add new content to the buffer
+    vim.api.nvim_buf_set_lines(preview_buf, 0, -1, false, example_code)
     vim.api.nvim_buf_set_option(preview_buf, 'modifiable', false)
+
   end
 
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
