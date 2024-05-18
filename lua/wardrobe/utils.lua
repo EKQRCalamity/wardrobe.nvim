@@ -7,7 +7,8 @@ end
 
 -- Get the currently selected scheme
 UTILS.get_selected_colorscheme = function()
-    return vim.api.nvim_get_option('colorscheme')
+  local colorscheme = vim.api.nvim_exec("colorscheme", true)
+  return colorscheme
 end
 
 -- Set the colorscheme
