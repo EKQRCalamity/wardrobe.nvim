@@ -102,6 +102,8 @@ end
 WINDOW.open_window = function()
   update_highlight_groups() -- Ensure highlight groups are set initially
 
+  selectedColorscheme = UTILS.get_selected_colorscheme()
+
   local preview = vim.o.columns > 160
   local buf = vim.api.nvim_create_buf(false, true)
   local preview_buf = vim.api.nvim_create_buf(true, true)
@@ -182,18 +184,30 @@ WINDOW.open_window = function()
   end)
 
   UTILS.set_keymap(preview_buf, "<esc>", function()
+    if selectedColorscheme ~= UTILS.get_selected_colorscheme() then
+      UTILS.vim_colorscheme(selectedColorscheme)
+    end
     UTILS.close_all(window, preview_win)
   end)
 
   UTILS.set_keymap(preview_buf, "q", function()
+    if selectedColorscheme ~= UTILS.get_selected_colorscheme() then
+      UTILS.vim_colorscheme(selectedColorscheme)
+    end
     UTILS.close_all(window, preview_win)
   end)
 
   UTILS.set_keymap(buf, "<esc>", function()
+    if selectedColorscheme ~= UTILS.get_selected_colorscheme() then
+      UTILS.vim_colorscheme(selectedColorscheme)
+    end
     UTILS.close_all(window, preview_win)
   end)
 
   UTILS.set_keymap(buf, "q", function()
+    if selectedColorscheme ~= UTILS.get_selected_colorscheme() then
+      UTILS.vim_colorscheme(selectedColorscheme)
+    end
     UTILS.close_all(window, preview_win)
   end)
 end
