@@ -106,7 +106,7 @@ WINDOW.open_window = function()
 
   local preview = vim.o.columns > 160
   local buf = vim.api.nvim_create_buf(false, true)
-  local preview_buf = vim.api.nvim_create_buf(true, true)
+  local preview_buf = vim.api.nvim_create_buf(false, true)
   local width = 50
   local main_win_width = 60
   if preview then
